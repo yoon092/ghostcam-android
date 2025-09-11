@@ -1,0 +1,91 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: 17
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Install Android SDK components
+      run: |
+        sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+        yes | sdkmanager --licenses
+
+    - name: Make gradlew executable
+      run: chmod +x gradlew
+
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug --stacktrace
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug-apk
+        path: app/build/outputs/apk/debug/app-debug.apk
+
+    - name: Create Release (if main/master branch)
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: GhostCam APK v${{ github.run_number }}
+        body: |
+          📱 **GhostCam Virtual Camera for Android**
+          
+          🔥 **Novos recursos desta versão:**
+          - Interface de login melhorada
+          - Controles principais implementados
+          - Compatibilidade com múltiplos apps
+          - Suporte ao framework Xposed
+          
+          ⚠️ **IMPORTANTE:**
+          - Requer device Android com ROOT
+          - Requer framework Xposed instalado
+          - Testado em Android 5.0+ (API 21+)
+          
+          📥 **Como instalar:**
+          1. Baixe o arquivo APK abaixo
+          2. Ative "Fontes desconhecidas" nas configurações
+          3. Instale o APK
+          4. Execute com privilégios de ROOT
+          
+          🔐 **Login padrão:**
+          - Usuário: `admin` / Senha: `ghost123`
+          - Usuário: `ghost` / Senha: `cam123`
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: app/build/outputs/apk/debug/app-debug.apk
+        asset_name: GhostCam-v${{ github.run_number }}.apk
+        asset_content_type: application/vnd.android.package-archive
