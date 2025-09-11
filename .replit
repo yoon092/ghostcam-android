@@ -1,0 +1,29 @@
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+packages = ["openjdk", "android-tools"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Android Info"
+
+[[workflows.workflow]]
+name = "Android Info"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"=== GhostCam Project Info ===\" && echo \"📱 Android Virtual Camera App\" && echo \"🔧 Status: Configurado para build via GitHub Actions\" && echo \"📥 Para baixar o APK: Vá para GitHub Actions -> Build Android APK\" && echo \"⚠️  Requer: Android com ROOT + Xposed Framework\" && echo \"==========================\""
+
+[workflows.workflow.metadata]
+outputType = "console"
